@@ -1,0 +1,60 @@
+# 跨平台兼容性测试：一次推送，在 7 种系统环境 × 2 个 Python 版本上自动验证
+#
+# 说明：
+#   - 私有仓库同样可用（Actions 在 GitHub 提供的托管机器上运行）
+#   - 免费额度有限，macOS 任务按约 10 倍计时消耗，可按需删减矩阵项
+#   - runner 标签会随 GitHub 更新淘汰，若某项报 "not supported"，
+#     到仓库 Settings -> Actions 查看最新可用列表后替换
+
+name: CI 跨平台兼容性
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:      # 支持在 Actions 页面手动触发
+
+jobs:
+  test:
+    name: ${{ matrix.os }} · Python ${{ matrix.python }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false     # 任一平台失败不影响其他平台继续跑完
+      matrix:
+        os:
+          # Linux
+          - ubuntu-22.04
+          - ubuntu-24.04
+          # Windows
+          - windows-2022
+          - windows-2025
+          # macOS（Intel 芯片）
+          - macos-15-intel
+          # macOS（Apple Silicon）
+          - macos-14
+          - macos-15
+        # 3.8 与本地开发环境一致，3.14 为当前最新版；可按需增删
+        python: ['3.8', '3.14']
+
+    env:
+      PYTHONIOENCODING: utf-8
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+
+      # Linux 机器没有图形环境：装虚拟显示 + Tk 库，让 GUI 测试也能真实执行
+      - name: 安装图形测试依赖（仅 Linux）
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y xvfb tk
+
+      - name: 运行兼容性测试（macOS / Windows）
+        if: runner.os != 'Linux'
+        run: python test_compat.py
+
+      - name: 运行兼容性测试（Linux）
+        if: runner.os == 'Linux'
+        run: xvfb-run -a python test_compat.py
