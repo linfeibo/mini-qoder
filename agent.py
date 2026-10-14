@@ -22,7 +22,19 @@ SSL_CTX = ssl.create_default_context()
 SSL_CTX.check_hostname = False
 SSL_CTX.verify_mode = ssl.CERT_NONE
 
-CONFIG_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "config.json")
+def _config_path():
+    """定位 config.json。
+
+    - 源码运行：与本文件同目录。
+    - PyInstaller 打包后：可执行文件所在目录（便于用户就地填写密钥，
+      而不是被解压到临时目录里找不到）。
+    """
+    if getattr(sys, "frozen", False):
+        return os.path.join(os.path.dirname(sys.executable), "config.json")
+    return os.path.join(os.path.dirname(os.path.abspath(__file__)), "config.json")
+
+
+CONFIG_PATH = _config_path()
 
 SYSTEM_PROMPT = """你是一个专业的 AI 编程智能体，工作在用户的代码工作区中。
 你可以通过工具来：查看目录、读取文件、搜索代码、创建/修改文件、执行命令。

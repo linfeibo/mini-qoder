@@ -15,7 +15,20 @@ import agent
 import tools
 
 PORT = 8081
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+
+def _base_dir():
+    """静态资源（index.html）所在目录。
+
+    PyInstaller onefile 打包后，随程序一起打进去的文件会解压到
+    sys._MEIPASS；源码运行时则为本文件所在目录。
+    """
+    if getattr(sys, "frozen", False):
+        return getattr(sys, "_MEIPASS", os.path.dirname(sys.executable))
+    return os.path.dirname(os.path.abspath(__file__))
+
+
+BASE_DIR = _base_dir()
 
 # 全局配置与会话状态
 cfg = None

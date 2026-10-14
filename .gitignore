@@ -10,3 +10,8 @@ venv/
 # 系统文件
 .DS_Store
 Thumbs.db
+
+# PyInstaller 打包产物（build/ 中间文件、dist/ 成品、自动生成的 spec）
+build/
+dist/
+*.spec
