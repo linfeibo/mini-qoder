@@ -1,0 +1,69 @@
+# Win7 / Win8 兼容性测试（自托管 runner 专用）
+#
+# 为什么单独一个文件：
+#   GitHub 官方托管机器【没有】Windows 7 / 8，只有 Server 版（≈Win10/11）。
+#   要测 Win7/8，只能你自己准备一台 Win7（或 Win8）机器/虚拟机，
+#   把它注册成 GitHub 的「自托管 runner」，GitHub 就会把这里的任务派到那台机器上跑。
+#
+# 硬约束：
+#   - Win7 只能运行 Python 3.8 及更早版本（3.9+ 不支持 Win7）。
+#   - 打包要支持 Win7，需用 PyInstaller 5.x（6.x 已放弃 Win7）。
+#
+# 前置条件（在 Win7 虚拟机里准备好）：
+#   1. 安装 Python 3.8.x，并勾选 "Add to PATH"
+#   2. 安装 Git for Windows
+#   3. 按 GitHub 官方步骤添加 self-hosted runner，并给 runner 打标签：win7
+#      仓库页 -> Settings -> Actions -> Runners -> New self-hosted runner -> Windows
+#   4. 注册时标签(label)填：win7
+#
+# 只有满足上面条件、且手动触发时，本工作流才会真正执行。
+
+name: Win7/Win8 兼容性（自托管）
+
+on:
+  workflow_dispatch: {}   # 仅手动触发：Actions 页面点 "Run workflow"
+
+jobs:
+  win7-test:
+    # 只有当存在打了 win7 标签的在线 runner 时才会被调度
+    runs-on: [self-hosted, windows, win7]
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # 自托管机器上直接用本机已装好的 Python 3.8（不用 setup-python，避免 Win7 不兼容）
+      - name: 显示环境
+        shell: cmd
+        run: |
+          python --version
+          git --version
+
+      - name: 运行源码兼容性测试
+        shell: cmd
+        run: python test_compat.py
+
+      - name: 安装支持 Win7 的打包工具（PyInstaller 5.x）
+        shell: cmd
+        run: |
+          python -m pip install --upgrade "pip<22"
+          pip install "pyinstaller==5.13.2"
+
+      - name: 打包成 Win7 可运行的 exe
+        shell: cmd
+        run: python build.py
+
+      - name: 冒烟测试 exe（直接运行成品）
+        shell: cmd
+        run: |
+          echo {"api_key":"ci-dummy-key","base_url":"http://127.0.0.1:1/v1","model":"dummy","workspace":"."} > dist\config.json
+          start "" dist\mini-qoder.exe
+          timeout /t 8 /nobreak >nul
+          curl -s -o nul -w "HTTP %%{http_code}\n" http://127.0.0.1:8081/
+          taskkill /im mini-qoder.exe /f
+
+      - name: 上传 Win7 成品
+        uses: actions/upload-artifact@v4
+        with:
+          name: mini-qoder-win7
+          path: dist/mini-qoder.exe

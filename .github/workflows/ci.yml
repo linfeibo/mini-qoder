@@ -25,7 +25,8 @@ jobs:
           # Linux
           - ubuntu-22.04
           - ubuntu-24.04
-          # Windows
+          # Windows（Server 版内核与家用版同源：2019≈Win10，2022/2025≈Win11）
+          - windows-2019
           - windows-2022
           - windows-2025
           # macOS（Intel 芯片）

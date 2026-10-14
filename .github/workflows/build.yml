@@ -19,7 +19,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-24.04, macos-14, windows-2022]
+        # windows-2019≈Win10、windows-2022≈Win11（Win7/8 见 win7-legacy.yml）
+        os: [ubuntu-24.04, macos-14, windows-2019, windows-2022]
 
     steps:
       - uses: actions/checkout@v4
